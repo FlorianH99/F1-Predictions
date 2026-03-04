@@ -1,77 +1,36 @@
-﻿import ConstructionRoundedIcon from "@mui/icons-material/ConstructionRounded";
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Stack,
-  Typography,
-} from "@mui/material";
+﻿import { Alert, Stack, Typography } from "@mui/material";
 
+import { AdminShell } from "@/components/admin-shell";
 import { PageHeader } from "@/components/page-header";
+import { getReadData } from "@/lib/data/read";
 
-const adminTasks = [
-  "Manage race weekends",
-  "Manage session start times",
-  "Enter official results",
-  "Recalculate score_entries",
-];
+export default async function AdminPage() {
+  const data = await getReadData();
 
-export default function AdminPage() {
   return (
     <Stack spacing={3}>
       <PageHeader
         title="Admin"
-        subtitle="Flo-only controls for race schedule management, results entry, and scoring operations."
+        subtitle="Flo-only controls for result entry and scoring operations."
       />
 
       <Alert severity="warning">
-        Auth is intentionally lightweight in v1. Enforce admin gating in the UI and RLS before production use.
+        v1 uses selector-based identity. Add RLS/policies before treating admin controls as secure.
       </Alert>
 
-      <Grid container spacing={2.5}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="h5">Admin Actions</Typography>
-                <List dense>
-                  {adminTasks.map((task) => (
-                    <ListItem key={task} disablePadding>
-                      <ListItemText primary={task} />
-                    </ListItem>
-                  ))}
-                </List>
-                <Stack direction="row" spacing={1}>
-                  <Button variant="contained">Enter Results</Button>
-                  <Button variant="outlined">Recalculate Scores</Button>
-                </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+      {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
 
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Stack spacing={1.2}>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <ConstructionRoundedIcon color="secondary" />
-                  <Typography variant="h5">Build Queue</Typography>
-                </Stack>
-                <Typography color="text.secondary">
-                  Next integration step is replacing these shell buttons with Supabase mutations for
-                  `race_weekends`, `sessions`, `results`, and `score_entries` recalculation.
-                </Typography>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Typography color="text.secondary" variant="body2">
+        Data source: {data.source === "supabase" ? "Supabase" : "Local mock fallback"}.
+      </Typography>
+
+      <AdminShell
+        source={data.source}
+        players={data.players}
+        drivers={data.drivers}
+        raceWeekends={data.raceWeekends}
+        results={data.results}
+      />
     </Stack>
   );
 }
