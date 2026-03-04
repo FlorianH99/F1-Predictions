@@ -12,6 +12,7 @@ import { CalendarSessionTable } from "@/components/calendar-session-table";
 import { PageHeader } from "@/components/page-header";
 import { getReadData } from "@/lib/data/read";
 import { getWeekendWithSessions } from "@/lib/derived";
+import { formatEasternDateTime } from "@/lib/time";
 
 export default async function CalendarPage() {
   const data = await getReadData();
@@ -21,7 +22,7 @@ export default async function CalendarPage() {
     <Stack spacing={3}>
       <PageHeader
         title="2026 Calendar"
-        subtitle="Full race weekend schedule with session starts shown in your browser's local timezone."
+        subtitle="Full race weekend schedule with session starts shown in US Eastern Time (ET)."
       />
 
       {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
@@ -40,7 +41,7 @@ export default async function CalendarPage() {
               </Stack>
 
               <Typography color="text.secondary">
-                {`${weekend.location} • Lock at ${new Date(weekend.lock_at_utc).toUTCString()}`}
+                {`${weekend.location} - Lock (ET): ${formatEasternDateTime(weekend.lock_at_utc)}`}
               </Typography>
 
               <Divider />

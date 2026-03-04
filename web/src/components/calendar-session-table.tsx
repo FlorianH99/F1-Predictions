@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   Chip,
@@ -27,7 +27,7 @@ export function CalendarSessionTable({ sessions }: CalendarSessionTableProps) {
         <TableHead>
           <TableRow>
             <TableCell>Session</TableCell>
-            <TableCell>Local Start</TableCell>
+            <TableCell>US Eastern</TableCell>
             <TableCell>UTC</TableCell>
           </TableRow>
         </TableHead>

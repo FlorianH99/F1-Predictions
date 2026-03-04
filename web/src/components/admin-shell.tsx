@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 
+import { formatEasternDateTime } from "@/lib/time";
 import type { Driver, Player, RaceWeekend, Result } from "@/lib/types";
 
 type ResultFormState = {
@@ -296,7 +297,7 @@ export function AdminShell({
           <Stack spacing={1.25}>
             <Typography variant="h5">Enter Official Result</Typography>
             <Stack direction="row" spacing={1}>
-              <Chip label={`Lock: ${new Date(selectedWeekend.lock_at_utc).toUTCString()}`} />
+              <Chip label={`Lock (ET): ${formatEasternDateTime(selectedWeekend.lock_at_utc)}`} />
               {selectedWeekend.is_sprint ? (
                 <Chip color="secondary" label="Sprint Weekend" />
               ) : null}

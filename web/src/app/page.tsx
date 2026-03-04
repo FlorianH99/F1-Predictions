@@ -10,13 +10,14 @@
 } from "@mui/material";
 
 import { PageHeader } from "@/components/page-header";
+import { getReadData } from "@/lib/data/read";
 import {
   getLeaderboardTotals,
   getLockCountdown,
   getSessionCountForWeekend,
   isWeekendLocked,
 } from "@/lib/derived";
-import { getReadData } from "@/lib/data/read";
+import { formatEasternDateTime } from "@/lib/time";
 
 function formatCountdown(milliseconds: number): string {
   const totalMinutes = Math.max(Math.floor(milliseconds / 60000), 0);
@@ -64,7 +65,7 @@ export default async function HomePage() {
                 <Typography variant="h4">{weekend?.name ?? "Season Complete"}</Typography>
                 <Typography variant="body1" color="text.secondary">
                   {weekend
-                    ? `${weekend.location} • ${weekend.is_sprint ? "Sprint weekend" : "Standard weekend"}`
+                    ? `${weekend.location} - ${weekend.is_sprint ? "Sprint weekend" : "Standard weekend"}`
                     : "No upcoming race weekend in the current schedule."}
                 </Typography>
 
@@ -72,7 +73,7 @@ export default async function HomePage() {
                   <Stack direction="row" spacing={1}>
                     <Chip
                       color="primary"
-                      label={`Lock: ${new Date(weekend.lock_at_utc).toUTCString()}`}
+                      label={`Lock (ET): ${formatEasternDateTime(weekend.lock_at_utc)}`}
                     />
                     <Chip
                       variant="outlined"

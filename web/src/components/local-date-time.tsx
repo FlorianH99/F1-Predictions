@@ -2,23 +2,15 @@
 
 import Typography from "@mui/material/Typography";
 
+import { formatEasternDateTime } from "@/lib/time";
+
 interface LocalDateTimeProps {
   iso: string;
   fallback?: string;
 }
 
 export function LocalDateTime({ iso, fallback = "--" }: LocalDateTimeProps) {
-  const formatted =
-    typeof window === "undefined"
-      ? fallback
-      : new Intl.DateTimeFormat(undefined, {
-          weekday: "short",
-          month: "short",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZoneName: "short",
-        }).format(new Date(iso));
+  const formatted = iso ? formatEasternDateTime(iso) : fallback;
 
   return (
     <Typography component="span" variant="body2" suppressHydrationWarning>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { getNextRaceWeekend, isWeekendLocked } from "@/lib/derived";
+import { formatEasternDateTime } from "@/lib/time";
 import type { Driver, Player, Prediction, RaceWeekend } from "@/lib/types";
 
 type PredictionFormState = {
@@ -335,7 +336,7 @@ export function PredictionsShell({
                 color={locked ? "warning" : "success"}
                 label={locked ? "Locked" : "Open"}
               />
-              <Chip label={`Lock: ${new Date(selectedWeekend.lock_at_utc).toUTCString()}`} />
+              <Chip label={`Lock (ET): ${formatEasternDateTime(selectedWeekend.lock_at_utc)}`} />
               {selectedWeekend.is_sprint && <Chip color="secondary" label="Sprint Weekend" />}
             </Stack>
           </Stack>

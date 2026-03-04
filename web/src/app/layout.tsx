@@ -2,6 +2,7 @@
 import { Barlow_Condensed, Manrope } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell";
+import { MuiEmotionCacheProvider } from "@/components/mui-emotion-cache-provider";
 import "./globals.css";
 
 const displayFont = Barlow_Condensed({
@@ -32,7 +33,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${displayFont.variable} ${bodyFont.variable}`}>
-        <AppShell>{children}</AppShell>
+        <MuiEmotionCacheProvider>
+          <AppShell>{children}</AppShell>
+        </MuiEmotionCacheProvider>
       </body>
     </html>
   );
