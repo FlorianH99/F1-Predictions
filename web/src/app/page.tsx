@@ -1,66 +1,126 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+﻿import { Alert, Button, Card, CardContent, Chip, Grid, Stack, Typography } from "@mui/material";
 
-export default function Home() {
+import { PageHeader } from "@/components/page-header";
+import {
+  getLeaderboardTotals,
+  getLockCountdown,
+  getSessionCountForWeekend,
+  isWeekendLocked,
+  results,
+} from "@/lib/mock-data";
+
+function formatCountdown(milliseconds: number): string {
+  const totalMinutes = Math.max(Math.floor(milliseconds / 60000), 0);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${days}d ${hours}h ${minutes}m`;
+}
+
+export default function HomePage() {
+  const now = new Date();
+  const standings = getLeaderboardTotals();
+  const { weekend, millisecondsUntilLock } = getLockCountdown(now);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Stack spacing={3.5}>
+      <PageHeader
+        title="Race Weekend Center"
+        subtitle="Track lock timing, quick standings, and current season status from the 2026 calendar."
+      />
+
+      {weekend && millisecondsUntilLock !== null ? (
+        <Alert severity={isWeekendLocked(weekend, now) ? "warning" : "info"}>
+          {isWeekendLocked(weekend, now)
+            ? `Predictions are locked for ${weekend.name}.`
+            : `Predictions lock in ${formatCountdown(millisecondsUntilLock)} for ${weekend.name}.`}
+        </Alert>
+      ) : (
+        <Alert severity="success">All race weekends are complete for this season.</Alert>
+      )}
+
+      <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12, lg: 7 }}>
+          <Card>
+            <CardContent>
+              <Stack spacing={1.25}>
+                <Typography variant="overline" color="text.secondary">
+                  Next Race
+                </Typography>
+                <Typography variant="h4">
+                  {weekend?.name ?? "Season Complete"}
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  {weekend
+                    ? `${weekend.location} • ${weekend.is_sprint ? "Sprint weekend" : "Standard weekend"}`
+                    : "No upcoming race weekend in the current mock schedule."}
+                </Typography>
+
+                {weekend ? (
+                  <Stack direction="row" spacing={1}>
+                    <Chip color="primary" label={`Lock: ${new Date(weekend.lock_at_utc).toUTCString()}`} />
+                    <Chip
+                      variant="outlined"
+                      label={`${getSessionCountForWeekend(weekend.id)} sessions tracked`}
+                    />
+                  </Stack>
+                ) : null}
+
+                <Stack direction="row" spacing={1.25} sx={{ pt: 1 }}>
+                  <Button href="/predictions" variant="contained">
+                    Open Predictions
+                  </Button>
+                  <Button href="/calendar" variant="outlined">
+                    View Calendar
+                  </Button>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, lg: 5 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="overline" color="text.secondary">
+                Standings Snapshot
+              </Typography>
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                {standings.map((entry, index) => (
+                  <Stack
+                    key={entry.player_id}
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{
+                      p: 1.2,
+                      borderRadius: 2,
+                      bgcolor: index === 0 ? "rgba(193,18,31,0.08)" : "transparent",
+                    }}
+                  >
+                    <Typography variant="body1">{`${index + 1}. ${entry.player_name}`}</Typography>
+                    <Chip label={`${entry.season_points} pts`} color={index === 0 ? "primary" : "default"} />
+                  </Stack>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="overline" color="text.secondary">
+                Results Coverage
+              </Typography>
+              <Typography variant="body1" sx={{ mt: 0.75 }}>
+                {`${results.length} race weekends have entered results. Use Admin to add results and trigger score recalculation for each completed weekend.`}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Stack>
   );
 }
