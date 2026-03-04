@@ -1,6 +1,7 @@
 import { Alert, Stack, Typography } from "@mui/material";
 
 import { AdminShell } from "@/components/admin-shell";
+import { CreateWeekendShell } from "@/components/create-weekend-shell";
 import { PageHeader } from "@/components/page-header";
 import { getReadData } from "@/lib/data/read";
 
@@ -23,6 +24,12 @@ export default async function AdminPage() {
       <Typography color="text.secondary" variant="body2">
         Data source: {data.source === "supabase" ? "Supabase" : "Local mock fallback"}.
       </Typography>
+
+      <CreateWeekendShell
+        source={data.source}
+        players={data.players}
+        raceWeekends={data.raceWeekends}
+      />
 
       <AdminShell
         source={data.source}

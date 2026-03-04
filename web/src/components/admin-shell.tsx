@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 
+import { TeamDriverBadge } from "@/components/team-driver-badge";
 import { sessionTypeLabel } from "@/lib/derived";
 import {
   formatEasternDateTime,
@@ -242,6 +243,7 @@ export function AdminShell({
   }
 
   const seasonDrivers = getDriversForSeason(drivers, selectedWeekend.season);
+  const seasonDriverById = new Map(seasonDrivers.map((driver) => [driver.id, driver]));
   const sessionTypesForWeekend = weekendState.is_sprint ? sprintSessionOrder : standardSessionOrder;
 
   const handleWeekendChange = (event: SelectChangeEvent) => {
@@ -692,6 +694,11 @@ export function AdminShell({
                     <Select
                       value={resultState[field.key]}
                       label={field.label}
+                      renderValue={(selected) => {
+                        const driver = seasonDriverById.get(String(selected));
+
+                        return <TeamDriverBadge driver={driver} compact />;
+                      }}
                       onChange={(event: SelectChangeEvent) =>
                         setResultState((previous) => ({
                           ...previous,
@@ -701,7 +708,7 @@ export function AdminShell({
                     >
                       {seasonDrivers.map((driver) => (
                         <MenuItem key={driver.id} value={driver.id}>
-                          {`${driver.display_name} (${driver.team_name})`}
+                          <TeamDriverBadge driver={driver} showTeamName compact />
                         </MenuItem>
                       ))}
                     </Select>
@@ -734,3 +741,4 @@ export function AdminShell({
     </Stack>
   );
 }
+

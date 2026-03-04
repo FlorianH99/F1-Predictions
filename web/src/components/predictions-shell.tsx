@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   Alert,
@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 
+import { TeamDriverBadge } from "@/components/team-driver-badge";
 import { getNextRaceWeekend, isWeekendLocked } from "@/lib/derived";
 import { formatEasternDateTime } from "@/lib/time";
 import type { Driver, Player, Prediction, RaceWeekend } from "@/lib/types";
@@ -118,7 +119,11 @@ function DriverSelect({
   season: number;
   drivers: Driver[];
 }) {
-  const driverOptions = getDriversForSeason(drivers, season);
+  const driverOptions = useMemo(() => getDriversForSeason(drivers, season), [drivers, season]);
+  const driverById = useMemo(
+    () => new Map(driverOptions.map((driver) => [driver.id, driver])),
+    [driverOptions],
+  );
 
   return (
     <FormControl fullWidth size="small">
@@ -127,10 +132,21 @@ function DriverSelect({
         label={label}
         value={value}
         onChange={(event: SelectChangeEvent) => onChange(event.target.value)}
+        renderValue={(selected) => {
+          const selectedDriver = driverById.get(String(selected));
+
+          return selectedDriver ? (
+            <TeamDriverBadge driver={selectedDriver} compact />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Select driver
+            </Typography>
+          );
+        }}
       >
         {driverOptions.map((driver) => (
           <MenuItem value={driver.id} key={driver.id}>
-            {`${driver.display_name} (${driver.team_name})`}
+            <TeamDriverBadge driver={driver} showTeamName compact />
           </MenuItem>
         ))}
       </Select>
@@ -331,7 +347,7 @@ export function PredictionsShell({
             <Typography color="text.secondary">
               Predictions lock at the start of the first prediction-relevant session.
             </Typography>
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               <Chip
                 color={locked ? "warning" : "success"}
                 label={locked ? "Locked" : "Open"}
@@ -352,10 +368,10 @@ export function PredictionsShell({
                   <DriverSelect
                     label={field.label}
                     value={formState[field.key]}
-                    onChange={(value) =>
+                    onChange={(driverId) =>
                       setFormState((previous) => ({
                         ...previous,
-                        [field.key]: value,
+                        [field.key]: driverId,
                       }))
                     }
                     season={selectedWeekend.season}

@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 
+import { TeamDriverBadge } from "@/components/team-driver-badge";
 import { formatEasternDateTime } from "@/lib/time";
 import type { Driver, Player, Prediction, RaceWeekend } from "@/lib/types";
 
@@ -50,12 +51,12 @@ const pickFields: Array<{
   { key: "sprint_race_p1_driver_id", label: "Sprint Race P1", sprintOnly: true },
 ];
 
-function getDriverLabel(driverById: Map<string, Driver>, driverId: string | null): string {
+function getDriver(driverById: Map<string, Driver>, driverId: string | null): Driver | null {
   if (!driverId) {
-    return "Not set";
+    return null;
   }
 
-  return driverById.get(driverId)?.display_name ?? "Unknown driver";
+  return driverById.get(driverId) ?? null;
 }
 
 export function PicksShell({ source, players, drivers, raceWeekends, predictions }: PicksShellProps) {
@@ -192,9 +193,13 @@ export function PicksShell({ source, players, drivers, raceWeekends, predictions
                                 <Typography variant="caption" color="text.secondary">
                                   {field.label}
                                 </Typography>
-                                <Typography variant="body2" sx={{ mt: 0.4, fontWeight: 600 }}>
-                                  {getDriverLabel(driverById, prediction[field.key])}
-                                </Typography>
+                                <Box sx={{ mt: 0.8 }}>
+                                  <TeamDriverBadge
+                                    driver={getDriver(driverById, prediction[field.key])}
+                                    fallbackLabel="Not set"
+                                    compact
+                                  />
+                                </Box>
                               </Box>
                             </Grid>
                           );
