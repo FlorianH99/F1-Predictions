@@ -5,8 +5,7 @@
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
-  hour12: false,
-  timeZoneName: "short",
+  hourCycle: "h23",
 });
 
 export function formatEasternDateTime(iso: string): string {
