@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
+import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import ManageAccountsRoundedIcon from "@mui/icons-material/ManageAccountsRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
@@ -36,6 +37,7 @@ const drawerWidth = 252;
 const navItems = [
   { label: "Home", href: "/", icon: <HomeRoundedIcon /> },
   { label: "Predictions", href: "/predictions", icon: <SpeedRoundedIcon /> },
+  { label: "Picks", href: "/picks", icon: <FactCheckRoundedIcon /> },
   {
     label: "Leaderboard",
     href: "/leaderboard",
