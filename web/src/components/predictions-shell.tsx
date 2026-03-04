@@ -19,15 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import {
-  drivers,
-  getDriversForSeason,
-  getNextRaceWeekend,
-  isWeekendLocked,
-  players,
-  predictions,
-  raceWeekends,
-} from "@/lib/mock-data";
+import { getNextRaceWeekend, isWeekendLocked } from "@/lib/derived";
+import type { Driver, Player, Prediction, RaceWeekend } from "@/lib/types";
 
 type PredictionFormState = {
   quali_pole_driver_id: string;
@@ -57,19 +50,38 @@ const fieldDefinitions: Array<{
   { key: "sprint_race_p1_driver_id", label: "Sprint Race P1", sprintOnly: true },
 ];
 
-function getFallbackDriverIds(season: number) {
-  const seasonDrivers = getDriversForSeason(season);
+interface PredictionsShellProps {
+  players: Player[];
+  drivers: Driver[];
+  raceWeekends: RaceWeekend[];
+  predictions: Prediction[];
+}
+
+function getDriversForSeason(drivers: Driver[], season: number): Driver[] {
+  return drivers
+    .filter((driver) => driver.season === season && driver.is_active)
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function getFallbackDriverIds(drivers: Driver[], season: number) {
+  const seasonDrivers = getDriversForSeason(drivers, season);
 
   return {
-    lead: seasonDrivers[0]?.id ?? drivers[0]?.id ?? "",
-    alt1: seasonDrivers[1]?.id ?? drivers[1]?.id ?? "",
-    alt2: seasonDrivers[2]?.id ?? drivers[2]?.id ?? "",
-    alt3: seasonDrivers[3]?.id ?? drivers[3]?.id ?? "",
-    alt4: seasonDrivers[4]?.id ?? drivers[4]?.id ?? "",
+    lead: seasonDrivers[0]?.id ?? "",
+    alt1: seasonDrivers[1]?.id ?? "",
+    alt2: seasonDrivers[2]?.id ?? "",
+    alt3: seasonDrivers[3]?.id ?? "",
+    alt4: seasonDrivers[4]?.id ?? "",
   };
 }
 
-function buildInitialState(playerId: string, weekendId: string): PredictionFormState {
+function buildInitialState(
+  playerId: string,
+  weekendId: string,
+  raceWeekends: RaceWeekend[],
+  predictions: Prediction[],
+  drivers: Driver[],
+): PredictionFormState {
   const weekend = raceWeekends.find((item) => item.id === weekendId);
   const season = weekend?.season ?? 2026;
 
@@ -77,7 +89,7 @@ function buildInitialState(playerId: string, weekendId: string): PredictionFormS
     (item) => item.player_id === playerId && item.race_weekend_id === weekendId,
   );
 
-  const fallback = getFallbackDriverIds(season);
+  const fallback = getFallbackDriverIds(drivers, season);
 
   return {
     quali_pole_driver_id: existing?.quali_pole_driver_id ?? fallback.lead,
@@ -95,13 +107,15 @@ function DriverSelect({
   value,
   onChange,
   season,
+  drivers,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   season: number;
+  drivers: Driver[];
 }) {
-  const driverOptions = getDriversForSeason(season);
+  const driverOptions = getDriversForSeason(drivers, season);
 
   return (
     <FormControl fullWidth size="small">
@@ -121,26 +135,41 @@ function DriverSelect({
   );
 }
 
-export function PredictionsShell() {
-  const firstUpcoming = getNextRaceWeekend();
+export function PredictionsShell({
+  players,
+  drivers,
+  raceWeekends,
+  predictions,
+}: PredictionsShellProps) {
+  const firstUpcoming = getNextRaceWeekend(raceWeekends);
   const defaultPlayerId = players[0]?.id ?? "";
   const defaultWeekendId = firstUpcoming?.id ?? raceWeekends[0]?.id ?? "";
 
   const [selectedPlayerId, setSelectedPlayerId] = useState(defaultPlayerId);
   const [selectedWeekendId, setSelectedWeekendId] = useState(defaultWeekendId);
   const [formState, setFormState] = useState<PredictionFormState>(() =>
-    buildInitialState(defaultPlayerId, defaultWeekendId),
+    buildInitialState(
+      defaultPlayerId,
+      defaultWeekendId,
+      raceWeekends,
+      predictions,
+      drivers,
+    ),
   );
 
   const selectedWeekend =
     raceWeekends.find((weekend) => weekend.id === selectedWeekendId) ?? raceWeekends[0];
 
+  if (players.length === 0) {
+    return <Alert severity="warning">No players available in `players` table.</Alert>;
+  }
+
   if (!selectedWeekend) {
-    return (
-      <Alert severity="warning">
-        No race weekends found. Seed race weekends before using the predictions form.
-      </Alert>
-    );
+    return <Alert severity="warning">No race weekends available in `race_weekends` table.</Alert>;
+  }
+
+  if (drivers.length === 0) {
+    return <Alert severity="warning">No drivers available in `drivers` table.</Alert>;
   }
 
   const locked = isWeekendLocked(selectedWeekend);
@@ -149,14 +178,30 @@ export function PredictionsShell() {
     const nextPlayerId = event.target.value;
 
     setSelectedPlayerId(nextPlayerId);
-    setFormState(buildInitialState(nextPlayerId, selectedWeekendId));
+    setFormState(
+      buildInitialState(
+        nextPlayerId,
+        selectedWeekendId,
+        raceWeekends,
+        predictions,
+        drivers,
+      ),
+    );
   };
 
   const handleWeekendChange = (event: SelectChangeEvent) => {
     const nextWeekendId = event.target.value;
 
     setSelectedWeekendId(nextWeekendId);
-    setFormState(buildInitialState(selectedPlayerId, nextWeekendId));
+    setFormState(
+      buildInitialState(
+        selectedPlayerId,
+        nextWeekendId,
+        raceWeekends,
+        predictions,
+        drivers,
+      ),
+    );
   };
 
   return (
@@ -224,6 +269,7 @@ export function PredictionsShell() {
                       }))
                     }
                     season={selectedWeekend.season}
+                    drivers={drivers}
                   />
                 </Grid>
               );

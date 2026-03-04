@@ -1,11 +1,21 @@
-﻿import { Card, CardContent, Chip, Divider, Stack, Typography } from "@mui/material";
+﻿import {
+  Alert,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Stack,
+  Typography,
+} from "@mui/material";
 
 import { CalendarSessionTable } from "@/components/calendar-session-table";
 import { PageHeader } from "@/components/page-header";
-import { getWeekendWithSessions } from "@/lib/mock-data";
+import { getReadData } from "@/lib/data/read";
+import { getWeekendWithSessions } from "@/lib/derived";
 
-export default function CalendarPage() {
-  const weekends = getWeekendWithSessions(2026);
+export default async function CalendarPage() {
+  const data = await getReadData();
+  const weekends = getWeekendWithSessions(data.raceWeekends, data.sessions, 2026);
 
   return (
     <Stack spacing={3}>
@@ -13,6 +23,8 @@ export default function CalendarPage() {
         title="2026 Calendar"
         subtitle="Full race weekend schedule with session starts shown in your browser's local timezone."
       />
+
+      {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
 
       <Typography variant="body2" color="text.secondary">
         Lock deadline is tied to the first prediction-relevant session for each weekend.

@@ -1,9 +1,12 @@
-﻿import { Stack, Typography } from "@mui/material";
+﻿import { Alert, Stack, Typography } from "@mui/material";
 
 import { PageHeader } from "@/components/page-header";
 import { PredictionsShell } from "@/components/predictions-shell";
+import { getReadData } from "@/lib/data/read";
 
-export default function PredictionsPage() {
+export default async function PredictionsPage() {
+  const data = await getReadData();
+
   return (
     <Stack spacing={3}>
       <PageHeader
@@ -11,11 +14,18 @@ export default function PredictionsPage() {
         subtitle="Select player and race weekend, then submit picks for qualifying, race, and sprint sessions."
       />
 
+      {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
+
       <Typography color="text.secondary" variant="body2">
-        Current view is a schema-aligned shell using local mock data. Wiring to Supabase tables is next.
+        Data source: {data.source === "supabase" ? "Supabase" : "Local mock fallback"}.
       </Typography>
 
-      <PredictionsShell />
+      <PredictionsShell
+        players={data.players}
+        drivers={data.drivers}
+        raceWeekends={data.raceWeekends}
+        predictions={data.predictions}
+      />
     </Stack>
   );
 }

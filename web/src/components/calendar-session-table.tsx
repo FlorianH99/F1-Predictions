@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 
 import { LocalDateTime } from "@/components/local-date-time";
-import { sessionTypeLabel } from "@/lib/mock-data";
+import { sessionTypeLabel } from "@/lib/derived";
 import type { Session } from "@/lib/types";
 
 interface CalendarSessionTableProps {

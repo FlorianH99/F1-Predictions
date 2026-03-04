@@ -1,4 +1,13 @@
-﻿import { Alert, Button, Card, CardContent, Chip, Grid, Stack, Typography } from "@mui/material";
+﻿import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  Stack,
+  Typography,
+} from "@mui/material";
 
 import { PageHeader } from "@/components/page-header";
 import {
@@ -6,8 +15,8 @@ import {
   getLockCountdown,
   getSessionCountForWeekend,
   isWeekendLocked,
-  results,
-} from "@/lib/mock-data";
+} from "@/lib/derived";
+import { getReadData } from "@/lib/data/read";
 
 function formatCountdown(milliseconds: number): string {
   const totalMinutes = Math.max(Math.floor(milliseconds / 60000), 0);
@@ -18,10 +27,12 @@ function formatCountdown(milliseconds: number): string {
   return `${days}d ${hours}h ${minutes}m`;
 }
 
-export default function HomePage() {
+export default async function HomePage() {
   const now = new Date();
-  const standings = getLeaderboardTotals();
-  const { weekend, millisecondsUntilLock } = getLockCountdown(now);
+  const data = await getReadData();
+
+  const standings = getLeaderboardTotals(data.players, data.scoreEntries);
+  const { weekend, millisecondsUntilLock } = getLockCountdown(data.raceWeekends, now);
 
   return (
     <Stack spacing={3.5}>
@@ -29,6 +40,8 @@ export default function HomePage() {
         title="Race Weekend Center"
         subtitle="Track lock timing, quick standings, and current season status from the 2026 calendar."
       />
+
+      {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
 
       {weekend && millisecondsUntilLock !== null ? (
         <Alert severity={isWeekendLocked(weekend, now) ? "warning" : "info"}>
@@ -48,21 +61,22 @@ export default function HomePage() {
                 <Typography variant="overline" color="text.secondary">
                   Next Race
                 </Typography>
-                <Typography variant="h4">
-                  {weekend?.name ?? "Season Complete"}
-                </Typography>
+                <Typography variant="h4">{weekend?.name ?? "Season Complete"}</Typography>
                 <Typography variant="body1" color="text.secondary">
                   {weekend
                     ? `${weekend.location} • ${weekend.is_sprint ? "Sprint weekend" : "Standard weekend"}`
-                    : "No upcoming race weekend in the current mock schedule."}
+                    : "No upcoming race weekend in the current schedule."}
                 </Typography>
 
                 {weekend ? (
                   <Stack direction="row" spacing={1}>
-                    <Chip color="primary" label={`Lock: ${new Date(weekend.lock_at_utc).toUTCString()}`} />
+                    <Chip
+                      color="primary"
+                      label={`Lock: ${new Date(weekend.lock_at_utc).toUTCString()}`}
+                    />
                     <Chip
                       variant="outlined"
-                      label={`${getSessionCountForWeekend(weekend.id)} sessions tracked`}
+                      label={`${getSessionCountForWeekend(data.sessions, weekend.id)} sessions tracked`}
                     />
                   </Stack>
                 ) : null}
@@ -100,7 +114,10 @@ export default function HomePage() {
                     }}
                   >
                     <Typography variant="body1">{`${index + 1}. ${entry.player_name}`}</Typography>
-                    <Chip label={`${entry.season_points} pts`} color={index === 0 ? "primary" : "default"} />
+                    <Chip
+                      label={`${entry.season_points} pts`}
+                      color={index === 0 ? "primary" : "default"}
+                    />
                   </Stack>
                 ))}
               </Stack>
@@ -115,7 +132,7 @@ export default function HomePage() {
                 Results Coverage
               </Typography>
               <Typography variant="body1" sx={{ mt: 0.75 }}>
-                {`${results.length} race weekends have entered results. Use Admin to add results and trigger score recalculation for each completed weekend.`}
+                {`${data.results.length} race weekends have entered results. Use Admin to add results and trigger score recalculation for each completed weekend.`}
               </Typography>
             </CardContent>
           </Card>

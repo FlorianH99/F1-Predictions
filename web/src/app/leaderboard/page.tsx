@@ -3,6 +3,7 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
   Card,
   CardContent,
   Chip,
@@ -16,11 +17,13 @@ import {
 } from "@mui/material";
 
 import { PageHeader } from "@/components/page-header";
-import { getLeaderboardTotals, getPerRacePoints } from "@/lib/mock-data";
+import { getReadData } from "@/lib/data/read";
+import { getLeaderboardTotals, getPerRacePoints } from "@/lib/derived";
 
-export default function LeaderboardPage() {
-  const totals = getLeaderboardTotals();
-  const perRace = getPerRacePoints();
+export default async function LeaderboardPage() {
+  const data = await getReadData();
+  const totals = getLeaderboardTotals(data.players, data.scoreEntries);
+  const perRace = getPerRacePoints(data.scoreEntries, data.raceWeekends, data.players);
 
   return (
     <Stack spacing={3}>
@@ -28,6 +31,8 @@ export default function LeaderboardPage() {
         title="Leaderboard"
         subtitle="Season standings and per-race scoring breakdown based on score_entries."
       />
+
+      {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
 
       <Card>
         <CardContent>
