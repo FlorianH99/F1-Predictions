@@ -1,5 +1,7 @@
 ﻿import { cache } from "react";
 
+import { unstable_noStore as noStore } from "next/cache";
+
 import {
   drivers as mockDrivers,
   players as mockPlayers,
@@ -142,6 +144,8 @@ function toScoreEntries(
 }
 
 export const getReadData = cache(async (): Promise<ReadData> => {
+  noStore();
+
   const supabase = createServerSupabaseClient();
 
   if (!supabase) {

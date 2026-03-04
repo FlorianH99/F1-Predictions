@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -18,6 +18,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
 
 import { getNextRaceWeekend, isWeekendLocked } from "@/lib/derived";
 import type { Driver, Player, Prediction, RaceWeekend } from "@/lib/types";
@@ -51,6 +52,7 @@ const fieldDefinitions: Array<{
 ];
 
 interface PredictionsShellProps {
+  source: "supabase" | "mock";
   players: Player[];
   drivers: Driver[];
   raceWeekends: RaceWeekend[];
@@ -135,12 +137,24 @@ function DriverSelect({
   );
 }
 
+async function getErrorMessage(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { error?: string };
+
+    return body.error ?? `Request failed (${response.status})`;
+  } catch {
+    return `Request failed (${response.status})`;
+  }
+}
+
 export function PredictionsShell({
+  source,
   players,
   drivers,
   raceWeekends,
   predictions,
 }: PredictionsShellProps) {
+  const router = useRouter();
   const firstUpcoming = getNextRaceWeekend(raceWeekends);
   const defaultPlayerId = players[0]?.id ?? "";
   const defaultWeekendId = firstUpcoming?.id ?? raceWeekends[0]?.id ?? "";
@@ -156,6 +170,11 @@ export function PredictionsShell({
       drivers,
     ),
   );
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<{
+    severity: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const selectedWeekend =
     raceWeekends.find((weekend) => weekend.id === selectedWeekendId) ?? raceWeekends[0];
@@ -177,6 +196,7 @@ export function PredictionsShell({
   const handlePlayerChange = (event: SelectChangeEvent) => {
     const nextPlayerId = event.target.value;
 
+    setSaveFeedback(null);
     setSelectedPlayerId(nextPlayerId);
     setFormState(
       buildInitialState(
@@ -192,6 +212,7 @@ export function PredictionsShell({
   const handleWeekendChange = (event: SelectChangeEvent) => {
     const nextWeekendId = event.target.value;
 
+    setSaveFeedback(null);
     setSelectedWeekendId(nextWeekendId);
     setFormState(
       buildInitialState(
@@ -204,8 +225,76 @@ export function PredictionsShell({
     );
   };
 
+  const handleSave = async () => {
+    if (source !== "supabase") {
+      setSaveFeedback({
+        severity: "error",
+        message: "Cannot save while app is in mock fallback mode.",
+      });
+      return;
+    }
+
+    if (locked) {
+      setSaveFeedback({
+        severity: "error",
+        message: "Predictions are locked for this weekend.",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveFeedback(null);
+
+    try {
+      const response = await fetch("/api/predictions/upsert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          race_weekend_id: selectedWeekend.id,
+          player_id: selectedPlayerId,
+          quali_pole_driver_id: formState.quali_pole_driver_id,
+          race_p1_driver_id: formState.race_p1_driver_id,
+          race_p2_driver_id: formState.race_p2_driver_id,
+          race_p3_driver_id: formState.race_p3_driver_id,
+          race_p10_driver_id: formState.race_p10_driver_id,
+          sprint_quali_pole_driver_id: selectedWeekend.is_sprint
+            ? formState.sprint_quali_pole_driver_id
+            : null,
+          sprint_race_p1_driver_id: selectedWeekend.is_sprint
+            ? formState.sprint_race_p1_driver_id
+            : null,
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await getErrorMessage(response);
+        setSaveFeedback({ severity: "error", message });
+        return;
+      }
+
+      setSaveFeedback({
+        severity: "success",
+        message: "Prediction saved successfully.",
+      });
+      router.refresh();
+    } catch (error) {
+      setSaveFeedback({
+        severity: "error",
+        message: `Request failed: ${String(error)}`,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Stack spacing={2.5}>
+      {saveFeedback ? (
+        <Alert severity={saveFeedback.severity}>{saveFeedback.message}</Alert>
+      ) : null}
+
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 4 }}>
           <FormControl fullWidth>
@@ -277,8 +366,12 @@ export function PredictionsShell({
           </Grid>
 
           <Box sx={{ mt: 2.5 }}>
-            <Button disabled={locked} variant="contained">
-              Save Prediction (UI Shell)
+            <Button
+              disabled={locked || isSaving || source !== "supabase"}
+              variant="contained"
+              onClick={handleSave}
+            >
+              {isSaving ? "Saving..." : "Save Prediction"}
             </Button>
           </Box>
         </CardContent>

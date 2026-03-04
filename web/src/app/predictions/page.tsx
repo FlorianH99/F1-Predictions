@@ -17,10 +17,12 @@ export default async function PredictionsPage() {
       {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
 
       <Typography color="text.secondary" variant="body2">
-        Data source: {data.source === "supabase" ? "Supabase" : "Local mock fallback"}.
+        Data source: {data.source === "supabase" ? "Supabase" : "Local mock fallback"}. Save
+        requests are lock-checked server-side.
       </Typography>
 
       <PredictionsShell
+        source={data.source}
         players={data.players}
         drivers={data.drivers}
         raceWeekends={data.raceWeekends}
