@@ -1,4 +1,4 @@
-﻿import { Alert, Stack, Typography } from "@mui/material";
+import { Alert, Stack, Typography } from "@mui/material";
 
 import { AdminShell } from "@/components/admin-shell";
 import { PageHeader } from "@/components/page-header";
@@ -11,7 +11,7 @@ export default async function AdminPage() {
     <Stack spacing={3}>
       <PageHeader
         title="Admin"
-        subtitle="Flo-only controls for result entry and scoring operations."
+        subtitle="Flo-only controls for weekend schedule, result entry, and scoring operations."
       />
 
       <Alert severity="warning">
@@ -29,6 +29,7 @@ export default async function AdminPage() {
         players={data.players}
         drivers={data.drivers}
         raceWeekends={data.raceWeekends}
+        sessions={data.sessions}
         results={data.results}
       />
     </Stack>

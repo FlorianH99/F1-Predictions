@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 
@@ -59,6 +59,10 @@ function getDriverLabel(driverById: Map<string, Driver>, driverId: string | null
 }
 
 export function PicksShell({ source, players, drivers, raceWeekends, predictions }: PicksShellProps) {
+  const sortedPlayers = useMemo(
+    () => [...players].sort((a, b) => a.name.localeCompare(b.name)),
+    [players],
+  );
   const sortedWeekends = useMemo(
     () =>
       [...raceWeekends].sort(
@@ -67,30 +71,20 @@ export function PicksShell({ source, players, drivers, raceWeekends, predictions
     [raceWeekends],
   );
 
-  const defaultPlayerId = players[0]?.id ?? "";
-  const defaultWeekendId = sortedWeekends[0]?.id ?? "";
-
-  const [selectedPlayerId, setSelectedPlayerId] = useState(defaultPlayerId);
-  const [selectedWeekendId, setSelectedWeekendId] = useState(defaultWeekendId);
-
-  const selectedPlayer = players.find((player) => player.id === selectedPlayerId) ?? players[0];
+  const [selectedWeekendId, setSelectedWeekendId] = useState(sortedWeekends[0]?.id ?? "");
   const selectedWeekend =
-    sortedWeekends.find((weekend) => weekend.id === selectedWeekendId) ?? sortedWeekends[0];
+    sortedWeekends.find((weekend) => weekend.id === selectedWeekendId) ?? sortedWeekends[0] ?? null;
 
   const driverById = useMemo(
     () => new Map(drivers.map((driver) => [driver.id, driver])),
     [drivers],
   );
-  const weekendById = useMemo(
-    () => new Map(sortedWeekends.map((weekend) => [weekend.id, weekend])),
-    [sortedWeekends],
-  );
 
-  if (players.length === 0) {
+  if (sortedPlayers.length === 0) {
     return <Alert severity="warning">No players found in `players` table.</Alert>;
   }
 
-  if (sortedWeekends.length === 0) {
+  if (!selectedWeekend) {
     return <Alert severity="warning">No race weekends found in `race_weekends` table.</Alert>;
   }
 
@@ -98,19 +92,18 @@ export function PicksShell({ source, players, drivers, raceWeekends, predictions
     return <Alert severity="warning">No drivers found in `drivers` table.</Alert>;
   }
 
-  const selectedPrediction = predictions.find(
-    (prediction) =>
-      prediction.player_id === selectedPlayer.id &&
-      prediction.race_weekend_id === selectedWeekend.id,
-  );
+  const predictionsByPlayer = new Map<string, Prediction>();
+  for (const prediction of predictions) {
+    if (prediction.race_weekend_id !== selectedWeekend.id) {
+      continue;
+    }
 
-  const playerPredictions = predictions
-    .filter((prediction) => prediction.player_id === selectedPlayer.id)
-    .sort(
-      (a, b) =>
-        Date.parse(weekendById.get(a.race_weekend_id)?.lock_at_utc ?? "0") -
-        Date.parse(weekendById.get(b.race_weekend_id)?.lock_at_utc ?? "0"),
-    );
+    predictionsByPlayer.set(prediction.player_id, prediction);
+  }
+
+  const submittedCount = sortedPlayers.reduce((count, player) => {
+    return count + (predictionsByPlayer.has(player.id) ? 1 : 0);
+  }, 0);
 
   return (
     <Stack spacing={2.5}>
@@ -118,112 +111,101 @@ export function PicksShell({ source, players, drivers, raceWeekends, predictions
         Data source: {source === "supabase" ? "Supabase" : "Local mock fallback"}.
       </Alert>
 
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <FormControl fullWidth>
-            <InputLabel>Player</InputLabel>
-            <Select
-              value={selectedPlayerId}
-              label="Player"
-              onChange={(event: SelectChangeEvent) => setSelectedPlayerId(event.target.value)}
-            >
-              {players.map((player) => (
-                <MenuItem key={player.id} value={player.id}>
-                  {player.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 8 }}>
-          <FormControl fullWidth>
-            <InputLabel>Race Weekend</InputLabel>
-            <Select
-              value={selectedWeekendId}
-              label="Race Weekend"
-              onChange={(event: SelectChangeEvent) => setSelectedWeekendId(event.target.value)}
-            >
-              {sortedWeekends.map((weekend) => (
-                <MenuItem key={weekend.id} value={weekend.id}>
-                  {`${weekend.name} (${weekend.location})`}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+      <FormControl fullWidth>
+        <InputLabel>Race Weekend</InputLabel>
+        <Select
+          value={selectedWeekendId}
+          label="Race Weekend"
+          onChange={(event: SelectChangeEvent) => setSelectedWeekendId(event.target.value)}
+        >
+          {sortedWeekends.map((weekend) => (
+            <MenuItem key={weekend.id} value={weekend.id}>
+              {`${weekend.name} (${weekend.location})`}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
       <Card>
         <CardContent>
           <Stack spacing={1} sx={{ mb: 2 }}>
-            <Typography variant="h5">Selected Weekend Picks</Typography>
+            <Typography variant="h5">All Player Picks</Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Chip label={selectedPlayer.name} color="secondary" />
               <Chip label={`Lock (ET): ${formatEasternDateTime(selectedWeekend.lock_at_utc)}`} />
               {selectedWeekend.is_sprint ? <Chip label="Sprint Weekend" color="primary" /> : null}
+              <Chip label={`Submitted: ${submittedCount}/${sortedPlayers.length}`} color="secondary" />
             </Stack>
           </Stack>
 
-          {!selectedPrediction ? (
-            <Alert severity="warning">No picks submitted yet for this player/weekend.</Alert>
-          ) : (
-            <Grid container spacing={1.5}>
-              {pickFields.map((field) => {
-                if (field.sprintOnly && !selectedWeekend.is_sprint) {
-                  return null;
-                }
+          <Grid container spacing={2}>
+            {sortedPlayers.map((player) => {
+              const prediction = predictionsByPlayer.get(player.id);
 
-                return (
-                  <Grid key={field.key} size={{ xs: 12, sm: 6, md: 4 }}>
-                    <Box
-                      sx={{
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        p: 1.5,
-                        height: "100%",
-                      }}
+              return (
+                <Grid key={player.id} size={{ xs: 12, md: 6, lg: 4 }}>
+                  <Box
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: 2,
+                      p: 2,
+                      height: "100%",
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      flexWrap="wrap"
+                      useFlexGap
+                      sx={{ mb: prediction ? 1.5 : 0 }}
                     >
-                      <Typography variant="caption" color="text.secondary">
-                        {field.label}
-                      </Typography>
-                      <Typography variant="body1" sx={{ mt: 0.4, fontWeight: 600 }}>
-                        {getDriverLabel(driverById, selectedPrediction[field.key])}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          )}
-        </CardContent>
-      </Card>
+                      <Chip label={player.name} color="secondary" />
+                      <Chip
+                        label={prediction ? "Submitted" : "Missing"}
+                        color={prediction ? "success" : "default"}
+                        variant={prediction ? "filled" : "outlined"}
+                      />
+                    </Stack>
 
-      <Card>
-        <CardContent>
-          <Stack spacing={1}>
-            <Typography variant="h6">Submitted Weekends for {selectedPlayer.name}</Typography>
-            {playerPredictions.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No submitted picks found yet.
-              </Typography>
-            ) : (
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {playerPredictions.map((prediction) => {
-                  const weekend = weekendById.get(prediction.race_weekend_id);
+                    {!prediction ? (
+                      <Typography variant="body2" color="text.secondary">
+                        No picks submitted yet for this weekend.
+                      </Typography>
+                    ) : (
+                      <Grid container spacing={1.25}>
+                        {pickFields.map((field) => {
+                          if (field.sprintOnly && !selectedWeekend.is_sprint) {
+                            return null;
+                          }
 
-                  return (
-                    <Chip
-                      key={prediction.id}
-                      label={weekend?.name ?? prediction.race_weekend_id}
-                      variant="outlined"
-                    />
-                  );
-                })}
-              </Stack>
-            )}
-          </Stack>
+                          return (
+                            <Grid key={`${player.id}-${field.key}`} size={{ xs: 12, sm: 6 }}>
+                              <Box
+                                sx={{
+                                  border: "1px solid",
+                                  borderColor: "divider",
+                                  borderRadius: 2,
+                                  p: 1.25,
+                                  height: "100%",
+                                }}
+                              >
+                                <Typography variant="caption" color="text.secondary">
+                                  {field.label}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mt: 0.4, fontWeight: 600 }}>
+                                  {getDriverLabel(driverById, prediction[field.key])}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          );
+                        })}
+                      </Grid>
+                    )}
+                  </Box>
+                </Grid>
+              );
+            })}
+          </Grid>
         </CardContent>
       </Card>
     </Stack>

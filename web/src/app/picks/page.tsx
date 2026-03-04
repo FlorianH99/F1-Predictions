@@ -1,4 +1,4 @@
-﻿import { Alert, Stack } from "@mui/material";
+import { Alert, Stack } from "@mui/material";
 
 import { PageHeader } from "@/components/page-header";
 import { PicksShell } from "@/components/picks-shell";
@@ -11,7 +11,7 @@ export default async function PicksPage() {
     <Stack spacing={3}>
       <PageHeader
         title="Picks"
-        subtitle="Review exactly what each player submitted for each race weekend."
+        subtitle="Review every player's submitted picks side by side for each race weekend."
       />
 
       {data.warning ? <Alert severity="info">{data.warning}</Alert> : null}
